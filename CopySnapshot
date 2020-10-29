@@ -1,0 +1,57 @@
+#!/bin/bash
+ 
+#Configure Flags
+while getopts s:d:e:i:m: flag
+do
+  case "${flag}" in
+   s) _source=${OPTARG};;
+   d) _dest=${OPTARG};;
+   e) _ext=${OPTARG};;
+   i) _id=${OPTARG};;
+   m) _desc=${OPTARG};;
+  esac
+done
+ 
+#Parameter Message
+ 
+_message="Invalid Parameters.
+Usage: $0 [OPTIONS]
+ 
+OPTIONS:
+Required:
+-s      string  Source Region of the Snapshot
+-d      string  Destination Region of the Snapshot
+-m      string  Description of the Snapshot
+ 
+Either: Select only one parameter
+-i      string  ID of the Snapshot
+-e      string  Path to the CSV which contains list of snapshot IDs"
+ 
+ 
+#validate input
+if [[ "$_source" == "" && "$_dest" == "" && "$_desc" == "" && ( "$_ext" == "" && "$_id" == "" ) ]]; then
+ 
+   echo "$_message"
+ 
+else
+   if [[ "$_source" != "" && "$_dest" != "" && "$_desc" != "" && ( "$_ext" != "" || "$_id" != "" ) ]]; then
+     
+      if [[ "$_id" != "" ]]; then
+     
+        aws ec2 copy-snapshot --region $_dest --source-region $_source --description "$_desc" --source-snapshot-id $_id
+     
+      else
+       
+        while IFS=, read -r _col1
+        do
+         aws ec2 copy-snapshot --region $_dest --source-region $_source --description "$_desc" --source-snapshot-id $_col1
+         echo $_col1
+        done < $_ext
+       
+      fi
+   else
+ 
+        echo "$_message"
+ 
+   fi
+fi
